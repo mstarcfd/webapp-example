@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block body %}
+
+<h1 class="uk-margin-top">Simple RPM App</h1>       
+<p>This is a agitated vessel with a Rushton impeller located in the center of the tank. The tank has 4 baffles. Adjust the impeller RPM and click Submit.</p>
+
+{% from "_formhelpers.html" import render_field %}
+<form method="POST" action="{{ url_for('mstarapp.simpleRpmForm') }}" class="uk-form-horizontal">
+    {{ form.csrf_token }}
+    {% if form.csrf_token.errors %}
+    <div class="uk-danger">You have submitted an invalid CSRF token</div>
+    {% endif %}
+
+    {{ render_field(form.rpm, class_='uk-input') }}
+    <div id="messages"></div>
+
+    <div class="uk-margin-top">
+        <button type="submit" class="uk-button uk-button-default uk-button-primary">Submit</button>
+    </div>
+    
+</form>   
+
+{% endblock %}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M-Star Rpm App</title>        
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/uikit.min.css') }}" />    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />    
+    
+</head>
+
+<body>
+
+    <aside id="left-col" class="uk-light">
+        <div class="bar-wrap"> 
+          <ul class="uk-nav-default uk-nav-parent-icon" uk-nav> 
+              
+              <li class="uk-nav-header">Submit new app job</li>
+              <li><a href="{{ url_for('mstarapp.simpleRpmForm') }}">Simple App</a></li>              
+
+              <li class="uk-nav-divider"></li>
+              <li><a href="#">Manage Jobs</a></li>                            
+              
+          </ul> 
+        </div>
+      </aside>
+
+    <div id="right-col">
+    <div class="uk-container"> 
+    {% block body %}{% endblock %}
+    </div>
+    </div>
+
+  <script src="{{ url_for('static', filename='js/uikit.min.js') }}" ></script>
+  <script src="{{ url_for('static', filename='js/uikit-icons.min.js') }}"></script>
+
+  {% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <script>
+
+    {% for message in messages %}
+    UIkit.notification('{{ message }}');          
+    {% endfor %}   
+
+    </script>
+   
+  {% endif %}
+  {% endwith %}
+
+</body>
+</html>

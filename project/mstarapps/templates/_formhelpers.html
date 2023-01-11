@@ -1,0 +1,21 @@
+
+{% macro render_field(field) %}
+<div>
+    <label class="uk-form-label">{{ field.label }}</label>    
+</div>
+
+<div class="uk-form-controls">    
+    {% if field.errors %}
+        {% set css_class = 'uk-form-danger ' + kwargs.pop('class_', '') %}
+        {{ field(class_=css_class, **kwargs) }}
+        <ul class="uk-list">
+        {% for error in field.errors %}
+        <li class="uk-text-danger">{{ error }}</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        {{ field(**kwargs)|safe }}
+    {% endif %}
+</div>
+
+{% endmacro %}
