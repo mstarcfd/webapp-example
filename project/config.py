@@ -16,6 +16,9 @@ class BaseConfig:
 
     SECRET_KEY = os.environ.get('SECRET_KEY', "kasjdfkldsjfkl")
 
+    INPUT_DATA_PATH = os.environ.get('INPUT_DATA_PATH', os.path.join(BASE_DIR, "data-input"))
+    OUTPUT_DATA_PATH = os.environ.get('OUTPUT_DATA_PATH', os.path.join(BASE_DIR, "data-output"))
+
 
 class DevelopmentConfig(BaseConfig):
     """Development configuration"""

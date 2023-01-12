@@ -7,12 +7,12 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect  # new
 
 from project.config import config  
-from project.celery_utils import make_celery
+from project.celery_utils import make_celery2
 
 # instantiate the extensions
 db = SQLAlchemy()
 migrate = Migrate()
-ext_celery = FlaskCeleryExt(create_celery_app=make_celery) 
+ext_celery = FlaskCeleryExt(create_celery_app=make_celery2) 
 csrf = CSRFProtect()  # new
 
 def create_app(config_name=None):  # updated    

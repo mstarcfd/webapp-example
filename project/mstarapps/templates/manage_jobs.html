@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block body %}
+
+<h1>Manage Jobs</h1>
+
+<table class="uk-table">
+    <thead>
+        <tr>
+            <th>Job Id</th>
+            <th>App Name</th>
+            <th>Status</th>
+            <th>Created</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for job in jobs %}
+        <tr>
+            <td>{{ job.id }}</td>
+            <td>{{ job.app_name }}</td>
+            <td>{{ job.job_status }}</td>
+            <td>{{ job.created.isoformat() }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
