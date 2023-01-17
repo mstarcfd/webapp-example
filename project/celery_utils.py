@@ -9,9 +9,10 @@ def make_celery(app):
     return celery
 
 def make_celery2(app):
+    print(app.config)
     from celery import Celery
     celery = Celery(app.import_name)
-    celery.config_from_object(app.config, namespace="CELERY")
+    celery.config_from_object(app.config, namespace="CELERY")        
 
     class ContextTask(celery.Task):
         def __call__(self, *args, **kwargs):

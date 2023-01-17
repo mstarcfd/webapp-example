@@ -13,6 +13,7 @@ class JobStatus(enum.Enum):
     Pending = 2
     Running = 3    
     Completed = 5
+    Error = 6
 
 class AppJob(db.Model):
 

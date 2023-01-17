@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block body %}
+
+<div>
+    <h3>{{ job.app_name }}: {{ job.id }}</h3>
+    <ul>
+        <li>ID: {{ job.id }}</li>
+        <li>Name: {{ job.app_name }}</li>
+        <li>Status: {{ job.job_status }}</li>
+    </ul>
+</div>
+
+
+<ul uk-tab>
+    <li><a href="#">Plots</a></li>
+    <li><a href="#">Logs</a></li>    
+</ul>
+
+<ul class="uk-switcher uk-margin">
+
+    <li>
+        <button id="plot-refresh" class="uk-button uk-button-default" >Refresh</button>
+        <div id="myplot">
+        </div>
+        
+    </li>
+
+    <li>
+        <button id="log-refresh" class="uk-button uk-button-default" >Refresh</button>
+        <div id="logStdOut">
+        </div>        
+    </li>    
+
+</ul>
+
+
+<script type="module">
+
+    import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+    import * as Plot from "https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm";
+
+    function getData() {
+        var url = "{{ url_for('mstarapp.simpleRpmAppGetData', job_id=job.id) }}";
+        fetch(url)
+            .then((response) => response.json())
+            .then((data) => {
+                console.log(data);
+                if ("MovingBody" in data) 
+                {
+                        const myplot = Plot.plot({
+                        y: { grid: true },
+                        marks:[
+                            Plot.line(data["MovingBody"], {x: "Time [s]", y: "Power Number [-]" }),            
+                            Plot.ruleY([0])
+                        ]
+                    });
+
+                    document.querySelector("#myplot").replaceChildren(myplot);
+                }                                
+            });
+    };
+
+    function getStdOutLog() {
+        var url = "{{ url_for('mstarapp.simpleRpmAppGetStdLog', job_id=job.id) }}";
+        fetch(url)   
+            .then((response) => response.text())         
+            .then((data) => {
+                console.log(data);
+                let logEl = document.createElement("div");
+                logEl.innerText = data;
+                document.querySelector("#logStdOut").replaceChildren(logEl);
+            });
+        }
+            
+    getData(); 
+    getStdOutLog();
+
+    document.getElementById ("plot-refresh").addEventListener ("click", getData);
+    document.getElementById ("log-refresh").addEventListener ("click", getStdOutLog);
+
+</script>
+
+
+{% endblock %}
