@@ -1,13 +1,16 @@
 
 from .forms import SimpleRpmForm
-from flask import request, flash, redirect, url_for, render_template
+from flask import request, flash, redirect, url_for, render_template, send_from_directory, current_app
 from . import app_blueprint
 from .models import AppJob
 from .tasks import delaySimpleRpmJob
 
 import os
+import json
+
 from project import db
 from sqlalchemy import desc
+
 
 output_dir = "/home/kevin/w/mstar-webapp2/data-output"
 
@@ -27,7 +30,7 @@ def simpleRpmForm():
             db.session.rollback()
             raise
 
-        delaySimpleRpmJob(jobid, form.rpm.data)
+        delaySimpleRpmJob(jobid, form.rpm.data, form.fluid_height.data)
 
         return redirect(url_for("mstarapp.manage_jobs"))
     return render_template("simpleRpmForm.html", form=form)
@@ -43,23 +46,84 @@ def dashboard():
     return render_template("dashboard.html")
 
 
+def filterDict(origDict, fields):
+    newDict = dict()
+    fieldsInt = set(fields).intersection(origDict.keys())
+    for f in fieldsInt:
+        newDict[f] = origDict[f]
+    return newDict
+
+
 @app_blueprint.route('/simple/job_detail/<int:job_id>', methods=['GET'])
 def simpleRpmAppGetDetail(job_id):
 
     job = db.get_or_404(AppJob, job_id)
-    return render_template("simpleRpmJobDetail.html", job=job)
+    caseDir = os.path.join(output_dir, str(job_id))
+
+    metad = {}
+    metaFn = os.path.join(caseDir, "meta.json")
+    if os.path.isfile(metaFn):
+        try:
+            with open(metaFn, 'r') as mf:
+                metad = json.load(mf)
+                metad = filterDict(metad, ["rpm", "fluid_height"])
+
+        except:
+            current_app.logger.warn("Error loading meta.json")
+            metad = {}
+            
+
+    return render_template("simpleRpmJobDetail.html", 
+                        job=job,
+                        meta_data=metad,
+                        files={
+                            "Processed": IterateDirLs(os.path.join(caseDir, "out/Processed")),                            
+                            "Stats":IterateDirLs(os.path.join(caseDir, "out/Stats")),
+                            "Case Directory": IterateDirLs(os.path.join(caseDir)),
+                            })
 
 
-@app_blueprint.route('/simple/job_detail/<int:job_id>/plots', methods=['GET'])
+
+def GetSimpleRpmAppGetDetailContext(job_id, page):
+
+    job = db.get_or_404(AppJob, job_id)
+    caseDir = os.path.join(output_dir, str(job_id))
+
+    metad = {}
+    metaFn = os.path.join(caseDir, "meta.json")
+    if os.path.isfile(metaFn):
+        try:
+            with open(metaFn, 'r') as mf:
+                metad = json.load(mf)
+                metad = filterDict(metad, ["rpm", "fluid_height"])
+
+        except:
+            current_app.logger.warn("Error loading meta.json")
+            metad = {}
+            
+
+    return dict(job=job, page=page, meta_data=metad,files={
+                            "Processed": IterateDirLs(os.path.join(caseDir, "out/Processed")),                            
+                            "Stats":IterateDirLs(os.path.join(caseDir, "out/Stats")),
+                            "Case Directory": IterateDirLs(os.path.join(caseDir)),
+                            })
+
+
+
+@app_blueprint.route('/simple/job/<int:job_id>/plots', methods=['GET'])
 def simpleRpmAppGetDetailPlots(job_id):
-    job = db.get_or_404(AppJob, job_id)    
-    return render_template("simpleRpmJobDetailPlot.html", job=job)
+    
+    return render_template("simpleRpmJobDetailPlots.html", **GetSimpleRpmAppGetDetailContext(job_id, "plots"))                        
 
-
-@app_blueprint.route('/simple/job_detail/<int:job_id>/log', methods=['GET'])
+@app_blueprint.route('/simple/job/<int:job_id>/logs', methods=['GET'])
 def simpleRpmAppGetDetailLogs(job_id):
-    job = db.get_or_404(AppJob, job_id)    
-    return render_template("simpleRpmJobDetailLogs.html", job=job)
+    
+    return render_template("simpleRpmJobDetailLogs.html", **GetSimpleRpmAppGetDetailContext(job_id, "logs"))    
+
+@app_blueprint.route('/simple/job/<int:job_id>/files', methods=['GET'])
+def simpleRpmAppGetDetailFiles(job_id):
+    
+    return render_template("simpleRpmJobDetailFiles.html", **GetSimpleRpmAppGetDetailContext(job_id, "files"))
 
 
 @app_blueprint.route('/simple/get_data/<int:job_id>>', methods=['GET'])
@@ -118,6 +182,45 @@ def simpleRpmAppGetErrLog(job_id):
         with open(logFn, 'rb') as f:
             return tail(f, 40)
     return ""
+
+def IterateDirLs(localPath: str):
+    if not os.path.isdir(localPath):
+        return
+
+    files = []
+    for fn in os.listdir(localPath):
+        if fn.startswith("."):
+            continue
+
+        fullpth = os.path.join(localPath, fn)
+        if os.path.isfile(fullpth):
+            stt = os.stat(fullpth)
+            files.append({
+                "path": os.path.relpath(fullpth, start=output_dir),
+                "filename": fn,
+                "size": stt.st_size,
+                "modified": stt.st_mtime
+            })
+
+    files.sort(key=lambda f: f["filename"])
+    return files
+
+@app_blueprint.route('/simple/get_file_list/<int:job_id>>', methods=['GET'])
+def simpleRpmAppGetFileList(job_id):
+    caseDir = os.path.join(output_dir, str(job_id))
+    files = []
+    if os.path.isdir(caseDir):
+
+        files.extend(IterateDirLs(os.path.join(caseDir, "out/Processed")))
+        #files.extend(IterateDirLs(os.path.join(caseDir, "out/Stats")))        
+
+    return { "files": files }
+        
+
+@app_blueprint.route('/download/<path:filename>', methods=['GET'])
+def downloadFile(filename):
+    return send_from_directory(output_dir,
+                               filename, as_attachment=False)
 
 @app_blueprint.errorhandler(404)
 def page_not_found(e):

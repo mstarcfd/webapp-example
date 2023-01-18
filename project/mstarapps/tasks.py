@@ -22,9 +22,9 @@ output_dir = "/home/kevin/w/mstar-webapp2/data-output"
 logger = get_task_logger(__name__)
 mstar.Initialize()
 
-def delaySimpleRpmJob(id: int, rpm: float):
+def delaySimpleRpmJob(id: int, rpm: float, fluidHeight: float):
 
-	chain(prepare_simpleRpmJob.s(id, rpm).on_error(setJobStatusTaskOnError.s(id, JobStatus.Error.value)), 
+	chain(prepare_simpleRpmJob.s(id, rpm, fluidHeight).on_error(setJobStatusTaskOnError.s(id, JobStatus.Error.value)), 
 			gpu_RunCase.s(id).set(queue="gpu").set(immutable=True).on_error(setJobStatusTaskOnError.s(id, JobStatus.Error.value)),
 			gpu_RunPostLast.s(id).set(queue="gpu").set(immutable=True).on_error(setJobStatusTaskOnError.s(id, JobStatus.Error.value)),
 			setJobStatusTask.s(id, JobStatus.Completed.value).set(immutable=True)
@@ -53,10 +53,10 @@ def setJobStatusTask(id: int, status: int):
 
 @celery.task()
 def setJobStatusTaskOnError(id: int, status: int, request, exc, traceback):
-	setJobStatus(id, status)
+	setJobStatus(id, JobStatus(status) )
 
 @celery.task()
-def prepare_simpleRpmJob(id: int, rpm: float):
+def prepare_simpleRpmJob(id: int, rpm: float, fluidHeight: float):
 	
 	job = db.session.query(AppJob).get(id)
 	if job is None:
@@ -68,7 +68,7 @@ def prepare_simpleRpmJob(id: int, rpm: float):
 		logger.info("creating case at " + casePath)
 		os.makedirs(casePath)
 	
-	inputMsbFn = os.path.join(input_dir, "simpleRpmApp/simulation.msb")
+	inputMsbFn = os.path.join(input_dir, "simpleRpmApp/simulationFreeSurface.msb")
 	outputMsbFn = os.path.join(casePath, "job.msb")
 	metaFn = os.path.join(casePath, "meta.json")
 	metaData = dict(jobid=job.id, 
@@ -76,7 +76,8 @@ def prepare_simpleRpmJob(id: int, rpm: float):
 					created=job.created.isoformat(),
 					input_msb=inputMsbFn,
 					output_msb=outputMsbFn,
-					rpm=rpm)
+					rpm=rpm,
+					fluid_height=fluidHeight)
 
 	with open (metaFn, 'w') as of:
 		json.dump(metaData, of)
@@ -86,6 +87,7 @@ def prepare_simpleRpmJob(id: int, rpm: float):
 
 	logger.info("Applying changes to msb")
 	m.Get("Moving Body").Get("Rotation Speed").Value = str(rpm)
+	m.Get("Fluid Height Box").Get("Fluid Height").Value = fluidHeight
 
 	logger.info("Saving msb: " + outputMsbFn)
 	m.Save(outputMsbFn)
@@ -98,7 +100,9 @@ def gpu_RunCase(job_id):
 	
 	casePath = os.path.join(output_dir, str(job_id))
 
-	cmd = [ "mstar-cfd-mgpu", "-i", "input.xml", "-o", "out", "--force", "--gpu-ids=0" ]
+	gpuids = ["0"]
+	gpuidarg = ",".join(gpuids)
+	cmd = [ "mstar-cfd-mgpu", "-i", "input.xml", "-o", "out", "--force", "--gpu-ids=" + gpuidarg ]
 
 	stdOutLogPath = os.path.join(casePath, "log-stdout.txt")
 	stdErrLogPath = os.path.join(casePath, "log-stderr.txt")
@@ -107,10 +111,28 @@ def gpu_RunCase(job_id):
 			
 			setJobStatus(job_id, JobStatus.Running)
 			
-			compl = subprocess.run(cmd, stdout=ostd, stderr=oerr, cwd=casePath)
+			line = "*" * 40
+			line += "\n"
+			ostd.write("\n\n")
+			ostd.write(line)
+			ostd.write("Running command: {0}\n".format(" ".join(cmd)))
+			ostd.write("Using GPUs: {0}\n".format(" ".join(gpuids)))
+			ostd.write("Started: {0} \n".format(datetime.now().isoformat()))
+			ostd.write(line)
+			ostd.write("\n\n")
+			ostd.flush()
+
+			compl = subprocess.run(cmd, stdout=ostd, stderr=oerr, cwd=casePath)			
+
+			ostd.write("\n\n")
+			ostd.write(line)
+			ostd.write("Ended: {0} \n".format(datetime.now().isoformat()))
+			ostd.write("Process exit code: {0}\n".format(compl.returncode))
+			ostd.write(line)			
 
 			if compl.returncode != 0:
-				setJobStatus(job_id, JobStatus.Error)
+				logger.error("Process failed with exit code {0}".format(compl.returncode))
+				raise ValueError("Process failed")
 				
 
 @celery.task()

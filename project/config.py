@@ -12,6 +12,7 @@ class BaseConfig:
 
     #CELERY_TASK_ALWAYS_EAGER=True
     CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")              # new
+    CELERY_broker_pool_limit = 100
     CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://127.0.0.1:6379/0")      # new    
     CELERY_ROUTES = {
         "project.mstarapps.tasks.gpu_Test": { "queue": "gpu" }

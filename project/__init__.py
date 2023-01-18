@@ -15,6 +15,15 @@ migrate = Migrate()
 ext_celery = FlaskCeleryExt(create_celery_app=make_celery2) 
 csrf = CSRFProtect()  # new
 
+suffixes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+def human_bytes(nbytes):
+    i = 0
+    while nbytes >= 1024 and i < len(suffixes)-1:
+        nbytes /= 1024.
+        i += 1
+    f = ('%.2f' % nbytes).rstrip('0').rstrip('.')
+    return '%s %s' % (f, suffixes[i])
+
 def create_app(config_name=None):  # updated    
     if config_name is None:
         config_name = os.environ.get("FLASK_CONFIG", "development")
@@ -38,6 +47,8 @@ def create_app(config_name=None):  # updated
     app.register_blueprint(users_blueprint)
     app.register_blueprint(app_blueprint)
 
+    # template filters
+    app.jinja_env.filters["human_bytes"] = human_bytes
     
 
     # shell context for flask cli

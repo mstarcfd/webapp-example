@@ -7,13 +7,18 @@
         <li>ID: {{ job.id }}</li>
         <li>Name: {{ job.app_name }}</li>
         <li>Status: {{ job.job_status }}</li>
+
+        {% for metaKey, metaValue in meta_data.items() %}
+        <li>{{ metaKey }}: {{ metaValue }}</li>
+        {% endfor %}
     </ul>
 </div>
 
 
 <ul uk-tab>
     <li><a href="#">Plots</a></li>
-    <li><a href="#">Logs</a></li>    
+    <li><a href="#">Logs</a></li>
+    <li><a href="#">Files</a></li>
 </ul>
 
 <ul class="uk-switcher uk-margin">
@@ -29,6 +34,36 @@
         <button id="log-refresh" class="uk-button uk-button-default" >Refresh</button>
         <div id="logStdOut">
         </div>        
+    </li>    
+
+    <li> 
+        <div>        
+        <table id="fileList" class="uk-table uk-table-small">            
+            <thead>
+                <tr>
+                    <th class="uk-width-1-4">Directory</th>
+                    <th class="uk-width-1-2">Filename</th>
+                    <th class="uk-width-1-4">Size</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fileGroupName, fileList in files.items() %}
+                <tr>
+                    <td><span uk-icon="icon: folder" class="uk-margin-small-right"></span>{{fileGroupName}}/</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                {% for f in fileList %}
+                <tr >
+                    <td></td>
+                    <td><a href="{{ url_for('mstarapp.downloadFile', filename=f.path) }}">{{ f.filename }}</a></td>
+                    <td>{{ f.size | human_bytes }}</td>
+                </tr>
+                {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>              
+        </div>           
     </li>    
 
 </ul>
@@ -71,9 +106,39 @@
                 document.querySelector("#logStdOut").replaceChildren(logEl);
             });
         }
+    
+    function getFileList() {
+        var url = "{{ url_for('mstarapp.simpleRpmAppGetFileList', job_id=job.id) }}";
+        fetch(url)   
+            .then((response) => response.json())         
+            .then((data) => {
+                console.log(data);
+
+                var table = d3.select("#fileList");
+                table.select("tbody").remove();
+                var tbody = table.append("tbody");
+
+                // create a row for each object in the data
+                var rows = tbody.selectAll('tr')
+                    .data(data["files"])
+                    .enter()
+                    .append('tr');
+
+                // create a cell in each row for each column
+                var cells = rows.selectAll('td')
+                                .data(function (r) {
+                                    return [ r["filename"], r["size"], r["modified"] ];                                
+                                })
+                                .enter()
+                                .append('td')
+                                    .text(function (d) { return d; });
+               
+            });
+        }
             
     getData(); 
     getStdOutLog();
+    //getFileList();
 
     document.getElementById ("plot-refresh").addEventListener ("click", getData);
     document.getElementById ("log-refresh").addEventListener ("click", getStdOutLog);

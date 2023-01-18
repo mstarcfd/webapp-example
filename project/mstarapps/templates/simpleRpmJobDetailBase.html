@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block body %}
+
+<div>
+    <h3>{{ job.app_name }}: {{ job.id }}</h3>
+    <ul class="uk-list uk-list-disc">
+        <li>ID: {{ job.id }}</li>
+        <li>Name: {{ job.app_name }}</li>
+        <li>Status: {{ job.job_status.name }}</li>
+
+        {% for metaKey, metaValue in meta_data.items() %}
+        <li>{{ metaKey }}: {{ metaValue }}</li>
+        {% endfor %}
+    </ul>
+</div>
+
+
+<ul class="uk-navbar-nav uk-nav-default">
+    <li 
+    {% if page == "plots" %} class="uk-active" {% endif %}
+    ><a href="{{ url_for('mstarapp.simpleRpmAppGetDetailPlots', job_id=job.id) }}">Plots</a></li>
+    <li
+    {% if page == "logs" %} class="uk-active" {% endif %}
+    ><a href="{{ url_for('mstarapp.simpleRpmAppGetDetailLogs', job_id=job.id) }}">Logs</a></li>
+    <li
+    {% if page == "files" %} class="uk-active" {% endif %}
+    ><a href="{{ url_for('mstarapp.simpleRpmAppGetDetailFiles', job_id=job.id) }}">Files</a></li>
+</ul>
+
+{% block job_detail_body %}{% endblock %}
+
+{% endblock %}

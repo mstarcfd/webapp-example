@@ -1,0 +1,32 @@
+{% extends "simpleRpmJobDetailBase.html" %}
+{% block job_detail_body %}
+
+<div>        
+<table id="fileList" class="uk-table uk-table-small">            
+    <thead>
+        <tr>
+            <th class="uk-width-1-4">Directory</th>
+            <th class="uk-width-1-2">Filename</th>
+            <th class="uk-width-1-4">Size</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for fileGroupName, fileList in files.items() %}
+        <tr>
+            <td><span uk-icon="icon: folder" class="uk-margin-small-right"></span>{{fileGroupName}}/</td>
+            <td></td>
+            <td></td>
+        </tr>
+        {% for f in fileList %}
+        <tr >
+            <td></td>
+            <td><a href="{{ url_for('mstarapp.downloadFile', filename=f.path) }}"><span uk-icon="icon: file-text"></span> {{ f.filename }}</a></td>
+            <td class="uk-text-meta">{{ f.size | human_bytes }}</td>
+        </tr>
+        {% endfor %}
+        {% endfor %}
+    </tbody>
+</table>              
+</div>              
+
+{% endblock %}

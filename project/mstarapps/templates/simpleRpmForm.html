@@ -2,6 +2,10 @@
 {% block body %}
 
 <h1 class="uk-margin-top">Simple RPM App</h1>       
+
+
+<img src="{{ url_for('static', filename='img/simpleRpmApp.jpg') }}" width="600px" height="auto">
+
 <p>This is a agitated vessel with a Rushton impeller located in the center of the tank. The tank has 4 baffles. Adjust the impeller RPM and click Submit.</p>
 
 {% from "_formhelpers.html" import render_field %}
@@ -12,6 +16,8 @@
     {% endif %}
 
     {{ render_field(form.rpm, class_='uk-input') }}
+    {{ render_field(form.fluid_height, class_='uk-input') }}
+
     <div id="messages"></div>
 
     <div class="uk-margin-top">
@@ -19,5 +25,7 @@
     </div>
     
 </form>   
+
+
 
 {% endblock %}
