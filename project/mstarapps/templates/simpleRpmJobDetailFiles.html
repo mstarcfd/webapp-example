@@ -13,10 +13,11 @@
     <tbody>
         {% for fileGroupName, fileList in files.items() %}
         <tr>
-            <td><span uk-icon="icon: folder" class="uk-margin-small-right"></span>{{fileGroupName}}/</td>
+            <td><span uk-icon="icon: folder" class="uk-margin-small-right"></span>{{ fileGroupName }}/</td>
             <td></td>
             <td></td>
         </tr>
+        {% if fileList is sequence %}
         {% for f in fileList %}
         <tr >
             <td></td>
@@ -24,6 +25,7 @@
             <td class="uk-text-meta">{{ f.size | human_bytes }}</td>
         </tr>
         {% endfor %}
+        {% endif %}
         {% endfor %}
     </tbody>
 </table>              

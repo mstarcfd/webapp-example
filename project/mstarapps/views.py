@@ -13,6 +13,7 @@ from sqlalchemy import desc
 
 
 output_dir = "/home/kevin/w/mstar-webapp2/data-output"
+input_dir = "/home/kevin/w/mstar-webapp2/data-input"
 
 @app_blueprint.route('/simple', methods=['GET', 'POST'])
 def simpleRpmForm():
@@ -27,10 +28,15 @@ def simpleRpmForm():
 
             jobid = job.id
         except Exception as e:
+            jobid = -1
             db.session.rollback()
             raise
 
-        delaySimpleRpmJob(jobid, form.rpm.data, form.fluid_height.data)
+        if jobid > 0:
+            delaySimpleRpmJob(jobid, form.rpm.data, form.fluid_height.data)
+            return redirect(url_for('mstarapp.simpleRpmAppGetDetailPlots', job_id=jobid))
+        else:
+            flash("Job submittal failed")
 
         return redirect(url_for("mstarapp.manage_jobs"))
     return render_template("simpleRpmForm.html", form=form)
@@ -220,6 +226,11 @@ def simpleRpmAppGetFileList(job_id):
 @app_blueprint.route('/download/<path:filename>', methods=['GET'])
 def downloadFile(filename):
     return send_from_directory(output_dir,
+                               filename, as_attachment=False)
+
+@app_blueprint.route('/download_inputs/<path:filename>', methods=['GET'])
+def downloadInputFile(filename):
+    return send_from_directory(input_dir,
                                filename, as_attachment=False)
 
 @app_blueprint.errorhandler(404)

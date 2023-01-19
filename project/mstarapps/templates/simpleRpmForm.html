@@ -1,15 +1,42 @@
 {% extends "base.html" %}
 {% block body %}
 
-<h1 class="uk-margin-top">Simple RPM App</h1>       
+<h1 class="uk-margin-top">Simple Agitated Vessel</h1>       
+
+<div class="uk-child-width-expand@s" uk-grid>
+    <div>
+        <img src="{{ url_for('static', filename='img/simpleRpmApp.jpg') }}" width="600px" height="auto">
+    </div>
+    <div>
+
+        <p>This is a agitated vessel with a Rushton impeller and free-surface fluid model. 
+            The tank has 4 baffles. Adjust the inputs and click Submit.</p>
+
+        <p>Case is run and then post-postprocessed automatically. The following output is generated:</p>
+
+        <ul>
+            <li>Report.PDF (Includes all statistics data generated from simulation)</li>
+            <li>Movies and images of field data</li>
+        </ul>
+
+        <p>For more detailed information on the case being executed, you can download it here: 
+            <a href="{{ url_for('mstarapp.downloadInputFile', filename='simpleRpmApp/simulationFreeSurface.msb') }}">simulationFreeSurface.msb</a></p>
+        
+
+        <p>The inputs have these constraints:
+            <ul>
+                <li>Impeller RPM: Must be between 0 and 60 RPM</li>
+                <li>Fluid Height [m]: Must be between 0 and 0.5 meters</li>
+            </ul>
+        </p>
+
+    </div>
+</div>
 
 
-<img src="{{ url_for('static', filename='img/simpleRpmApp.jpg') }}" width="600px" height="auto">
-
-<p>This is a agitated vessel with a Rushton impeller located in the center of the tank. The tank has 4 baffles. Adjust the impeller RPM and click Submit.</p>
 
 {% from "_formhelpers.html" import render_field %}
-<form method="POST" action="{{ url_for('mstarapp.simpleRpmForm') }}" class="uk-form-horizontal">
+<form method="POST" action="{{ url_for('mstarapp.simpleRpmForm') }}" class="uk-form-stacked">
     {{ form.csrf_token }}
     {% if form.csrf_token.errors %}
     <div class="uk-danger">You have submitted an invalid CSRF token</div>

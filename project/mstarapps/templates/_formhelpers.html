@@ -1,5 +1,8 @@
 
 {% macro render_field(field) %}
+
+<div class="uk-margin">
+
 <div>
     <label class="uk-form-label">{{ field.label }}</label>    
 </div>
@@ -16,6 +19,8 @@
     {% else %}
         {{ field(**kwargs)|safe }}
     {% endif %}
+</div>
+
 </div>
 
 {% endmacro %}

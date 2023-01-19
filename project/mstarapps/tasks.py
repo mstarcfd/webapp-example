@@ -24,9 +24,11 @@ mstar.Initialize()
 
 def delaySimpleRpmJob(id: int, rpm: float, fluidHeight: float):
 
-	chain(prepare_simpleRpmJob.s(id, rpm, fluidHeight).on_error(setJobStatusTaskOnError.s(id, JobStatus.Error.value)), 
-			gpu_RunCase.s(id).set(queue="gpu").set(immutable=True).on_error(setJobStatusTaskOnError.s(id, JobStatus.Error.value)),
-			gpu_RunPostLast.s(id).set(queue="gpu").set(immutable=True).on_error(setJobStatusTaskOnError.s(id, JobStatus.Error.value)),
+	onerr = onErrSig(id)
+
+	chain(prepare_simpleRpmJob.s(id, rpm, fluidHeight).on_error(onerr), 
+			gpu_RunCase.s(id).set(queue="gpu").set(immutable=True).on_error(onerr),
+			gpu_RunPostLast.s(id).set(queue="gpu").set(immutable=True).on_error(onerr),
 			setJobStatusTask.s(id, JobStatus.Completed.value).set(immutable=True)
 			).delay()
 
@@ -52,12 +54,23 @@ def setJobStatusTask(id: int, status: int):
 	setJobStatus(id, JobStatus(status) )
 
 @celery.task()
-def setJobStatusTaskOnError(id: int, status: int, request, exc, traceback):
+def setJobStatusTaskOnError(request, exc, traceback, id=-1, status=JobStatus.Error.value):
+
+	try:
+		casePath = os.path.join(output_dir, str(id))
+		if os.path.isdir(casePath):
+			with open(os.path.join(casePath, "internal-errs.txt"), 'a') as fh:
+				print('--\n\n{0} {1} {2}'.format(request.id, exc, traceback), file=fh)
+	except:
+		pass
+
 	setJobStatus(id, JobStatus(status) )
 
+def onErrSig(id):
+	return setJobStatusTaskOnError.s(id=id, status=JobStatus.Error.value)
+
 @celery.task()
-def prepare_simpleRpmJob(id: int, rpm: float, fluidHeight: float):
-	
+def prepare_simpleRpmJob(id: int, rpm: float, fluidHeight: float):	
 	job = db.session.query(AppJob).get(id)
 	if job is None:
 		raise ValueError("Job not found: {0}".format(id))
@@ -84,7 +97,7 @@ def prepare_simpleRpmJob(id: int, rpm: float, fluidHeight: float):
 		
 	logger.info("Loading msb: " + inputMsbFn)
 	m = mstar.Load(inputMsbFn)    
-
+		
 	logger.info("Applying changes to msb")
 	m.Get("Moving Body").Get("Rotation Speed").Value = str(rpm)
 	m.Get("Fluid Height Box").Get("Fluid Height").Value = fluidHeight
@@ -140,6 +153,8 @@ def gpu_RunPostLast(job_id):
 
 	# Todo - redirect log to file
 	# Todo - capture errors? 
+	import matplotlib
+	matplotlib.use("Agg")
 	casePath = os.path.join(output_dir, str(job_id))
 	from mstarpypost.batch_post import CreateAllBatchConfig, run_post
 	conf = CreateAllBatchConfig(casePath, 
