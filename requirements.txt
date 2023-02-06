@@ -34,3 +34,4 @@ watchfiles
 Flask-WTF
 requests
 pydantic
+mstarpypost
