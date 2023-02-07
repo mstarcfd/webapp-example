@@ -8,7 +8,7 @@ The app will then apply the changes to the M-Star CFD model, run it in the Solve
 
 # Architecture
 
-This web app example uses Python Flask, Celery, Redis, and other libraries to implement the web application. Some client side javascript is present to plot data of running cases.
+This web app example uses Python Flask, Celery, Redis or Rabbitmq, and other libraries to implement the web application. Some client side javascript is present to plot data of running cases.
 
 The backend Celery tasks use 2 different queues: one for general purpose tasks such as pre-processing or exporting files, and one for GPU-specific tasks. This lets us isolate the GPU work into a separate task queue which will have real harware resource constraints. 
 
@@ -19,6 +19,16 @@ The front-end:
 
 # Environment
 
+Install to system:
+
+- ffmpeg
+- python 3.9 or 3.10
+- gtk 3.0
+- NVidia driver
+- Open MPI 3.1+ 
+
+Setup Redis or Rabbitmq
+
 Initialize a virtual environment and install the base environment. 
 
 ```
@@ -27,7 +37,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-To install the M-Star Pre-processing Library, you will need to download and extract one of the M-Star CFD packages from the download site. Then modify your python environment using one of the methods documented here -- https://docs.mstarcfd.com/12_MStar_API/txt-files/installation.html . A python package has not yet been developed for the M-Star CFD Pre API, so this step is still a manual process. 
+To install the M-Star Pre-processing Library, you will need to download and extract one of the M-Star CFD packages from the download site. Then modify your python environment using one of the methods documented here -- https://docs.mstarcfd.com/12_MStar_API/txt-files/installation.html . 
 
 Now add the M-Star Solver to your PATH by sourcing the `/path/to/mstarXYZ/mstar.sh` file which is included in the above package you downloaded. 
 
@@ -39,12 +49,13 @@ You can use the below script to initialize the environment. Modify for your need
 # Python: flask, celery, mstarpypost, etc
 source venv/bin/activate
 
-# Add M-Star Python module to environment manually
+# Add M-Star CFD
 MSTAR_INSTALL=/path/to/mstarXYZ
-export PYTHONPATH=$MSTAR_INSTALL/lib
-
-# Add M-Star Solver to environment
 source $MSTAR_INSTALL/mstar.sh
+
+# Add M-Star CFD Python module to environment
+# Alternatively, you can add `mstar.pth` file to the virtual environment sitepackages dir
+export PYTHONPATH=$MSTAR_INSTALL/lib
 
 # Setup M-Star license
 export mstar_LICENSE=5053@mycompany.rlm.server.net
