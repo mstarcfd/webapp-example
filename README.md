@@ -2,24 +2,15 @@
 
 # Overview
 
-This is an example web application that performs a complete computational fluid dynamics (CFD) analysis using M-Star CFD. The example uses the built-in agitated vessel as a starting point, and allows the user to change a few specific inputs on a web form.
+This is an example web application that performs a complete computational fluid dynamics (CFD) analysis using M-Star CFD. The example uses an agitated vessel as a starting point, and allows the user to change a few specific inputs on a web form.
 
-The app will then apply the changes to the M-Star CFD model, run it in the Solver, and post-process the results into images, movies, and a PDF report. 
+The app will then apply the changes to the M-Star CFD model, run the Solver, and post-process the results into images, movies, and a PDF report. 
 
 # Architecture
 
 This web app example uses Python Flask, Celery, Redis or Rabbitmq, and other libraries to implement the web application. Some client side javascript is present to plot data of running cases.
 
-The backend Celery tasks use 2 different queues: one for general purpose tasks such as pre-processing or exporting files, and one for GPU-specific tasks. This lets us isolate the GPU work into a separate task queue which will have real harware resource constraints. 
-
-The front-end:
-
-- uikit
-- d3 Observable Plot
-
 # Environment
-
-Install to system:
 
 - ffmpeg
 - python 3.9 or 3.10
@@ -27,9 +18,6 @@ Install to system:
 - NVidia driver
 - Open MPI 3.1+ 
 
-Setup Redis or Rabbitmq
-
-Initialize a virtual environment and install the base environment. 
 
 ```
 python -m venv venv
@@ -72,13 +60,9 @@ Start web worker
 
 `flask run`
 
-Start general purpose backend worker. This worker will perform pre-processing, export, and other work.
+Start celery worker
 
-`celery -A app.celery worker`
-
-Start GPU backend worker with a concurrency of **1** which will limit one GPU job at a time. Multiple GPUs and resource aware queuing is not implemented. 
-
-`celery -A app.celery worker -Q gpu -c 1`
+`celery -A app.celery worker -Q celery,gpu`
 
 
 

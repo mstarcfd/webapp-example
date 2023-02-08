@@ -11,10 +11,6 @@ import json
 from project import db
 from sqlalchemy import desc
 
-
-output_dir = "/home/kevin/w/mstar-webapp2/data-output"
-input_dir = "/home/kevin/w/mstar-webapp2/data-input"
-
 @app_blueprint.route('/simple', methods=['GET', 'POST'])
 def simpleRpmForm():
     form = SimpleRpmForm()
@@ -64,7 +60,7 @@ def filterDict(origDict, fields):
 def simpleRpmAppGetDetail(job_id):
 
     job = db.get_or_404(AppJob, job_id)
-    caseDir = os.path.join(output_dir, str(job_id))
+    caseDir = os.path.join(current_app.config.get("OUTPUT_DATA_PATH"), str(job_id))
 
     metad = {}
     metaFn = os.path.join(caseDir, "meta.json")
@@ -91,9 +87,9 @@ def simpleRpmAppGetDetail(job_id):
 
 
 def GetSimpleRpmAppGetDetailContext(job_id, page):
-
+    
     job = db.get_or_404(AppJob, job_id)
-    caseDir = os.path.join(output_dir, str(job_id))
+    caseDir = os.path.join(current_app.config["OUTPUT_DATA_PATH"], str(job_id))
 
     metad = {}
     metaFn = os.path.join(caseDir, "meta.json")
@@ -138,7 +134,7 @@ def simpleRpmAppGetData(job_id):
 
     job = db.get_or_404(AppJob, job_id)
     
-    casePath = os.path.join(output_dir, str(job.id))
+    casePath = os.path.join(current_app.config.get("OUTPUT_DATA_PATH"), str(job.id))
 
     bodyfn = os.path.join(casePath, "out/Stats/MovingBody_Moving Body.txt")
     if os.path.isfile(bodyfn):
@@ -175,7 +171,7 @@ def tail(f, lines=20):
 
 @app_blueprint.route('/simple/get_stdout/<int:job_id>>', methods=['GET'])
 def simpleRpmAppGetStdLog(job_id):
-    logFn = os.path.join(output_dir, str(job_id), "log-stdout.txt")
+    logFn = os.path.join(current_app.config.get("OUTPUT_DATA_PATH"), str(job_id), "log-stdout.txt")
     if os.path.isfile(logFn):
         with open(logFn, 'rb') as f:
             return tail(f, 40)
@@ -183,7 +179,7 @@ def simpleRpmAppGetStdLog(job_id):
 
 @app_blueprint.route('/simple/get_stderr/<int:job_id>>', methods=['GET'])
 def simpleRpmAppGetErrLog(job_id):
-    logFn = os.path.join(output_dir, str(job_id), "log-stderr.txt")
+    logFn = os.path.join(current_app.config.get("OUTPUT_DATA_PATH"), str(job_id), "log-stderr.txt")
     if os.path.isfile(logFn):
         with open(logFn, 'rb') as f:
             return tail(f, 40)
@@ -202,7 +198,7 @@ def IterateDirLs(localPath: str):
         if os.path.isfile(fullpth):
             stt = os.stat(fullpth)
             files.append({
-                "path": os.path.relpath(fullpth, start=output_dir),
+                "path": os.path.relpath(fullpth, start=current_app.config.get("OUTPUT_DATA_PATH")),
                 "filename": fn,
                 "size": stt.st_size,
                 "modified": stt.st_mtime
@@ -213,7 +209,7 @@ def IterateDirLs(localPath: str):
 
 @app_blueprint.route('/simple/get_file_list/<int:job_id>>', methods=['GET'])
 def simpleRpmAppGetFileList(job_id):
-    caseDir = os.path.join(output_dir, str(job_id))
+    caseDir = os.path.join(current_app.config.get("OUTPUT_DATA_PATH"), str(job_id))
     files = []
     if os.path.isdir(caseDir):
 
@@ -225,12 +221,12 @@ def simpleRpmAppGetFileList(job_id):
 
 @app_blueprint.route('/download/<path:filename>', methods=['GET'])
 def downloadFile(filename):
-    return send_from_directory(output_dir,
+    return send_from_directory(current_app.config.get("OUTPUT_DATA_PATH"),
                                filename, as_attachment=False)
 
 @app_blueprint.route('/download_inputs/<path:filename>', methods=['GET'])
 def downloadInputFile(filename):
-    return send_from_directory(input_dir,
+    return send_from_directory(current_app.config.get("INPUT_DATA_PATH"),
                                filename, as_attachment=False)
 
 @app_blueprint.errorhandler(404)

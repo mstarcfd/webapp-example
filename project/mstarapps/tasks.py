@@ -9,6 +9,7 @@ from datetime import datetime
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from celery import chain
+from flask import current_app
 
 #from celery import current_app as current_celery_app
 import mstar
@@ -17,10 +18,8 @@ from project import db, ext_celery
 
 
 celery = ext_celery.celery
-input_dir = "/home/kevin/w/mstar-webapp2/data-input"
-output_dir = "/home/kevin/w/mstar-webapp2/data-output"
 logger = get_task_logger(__name__)
-mstar.Initialize()
+
 
 def delaySimpleRpmJob(id: int, rpm: float, fluidHeight: float):
 
@@ -57,7 +56,7 @@ def setJobStatusTask(id: int, status: int):
 def setJobStatusTaskOnError(request, exc, traceback, id=-1, status=JobStatus.Error.value):
 
 	try:
-		casePath = os.path.join(output_dir, str(id))
+		casePath = os.path.join(current_app.config.get("OUTPUT_DATA_PATH"), str(id))
 		if os.path.isdir(casePath):
 			with open(os.path.join(casePath, "internal-errs.txt"), 'a') as fh:
 				print('--\n\n{0} {1} {2}'.format(request.id, exc, traceback), file=fh)
@@ -71,16 +70,21 @@ def onErrSig(id):
 
 @celery.task()
 def prepare_simpleRpmJob(id: int, rpm: float, fluidHeight: float):	
+
+	mstar.Initialize()
+
 	job = db.session.query(AppJob).get(id)
 	if job is None:
 		raise ValueError("Job not found: {0}".format(id))
 
-	casePath = os.path.join(output_dir, str(job.id))
+	casePath = os.path.join(current_app.config.get("OUTPUT_DATA_PATH"), str(job.id))
 	
 	if not os.path.isdir(casePath):
 		logger.info("creating case at " + casePath)
 		os.makedirs(casePath)
 	
+	input_dir = current_app.config.get("INPUT_DATA_PATH")
+	output_dir = current_app.config.get("OUTPUT_DATA_PATH")
 	inputMsbFn = os.path.join(input_dir, "simpleRpmApp/simulationFreeSurface.msb")
 	outputMsbFn = os.path.join(casePath, "job.msb")
 	metaFn = os.path.join(casePath, "meta.json")
@@ -111,6 +115,7 @@ def prepare_simpleRpmJob(id: int, rpm: float, fluidHeight: float):
 @celery.task()
 def gpu_RunCase(job_id):
 	
+	output_dir = current_app.config.get("OUTPUT_DATA_PATH")
 	casePath = os.path.join(output_dir, str(job_id))
 
 	gpuids = ["0"]
@@ -135,6 +140,7 @@ def gpu_RunCase(job_id):
 			ostd.write("\n\n")
 			ostd.flush()
 
+			logger.info("Running command: {0}\n".format(" ".join(cmd)))
 			compl = subprocess.run(cmd, stdout=ostd, stderr=oerr, cwd=casePath)			
 
 			ostd.write("\n\n")
@@ -155,7 +161,7 @@ def gpu_RunPostLast(job_id):
 	# Todo - capture errors? 
 	import matplotlib
 	matplotlib.use("Agg")
-	casePath = os.path.join(output_dir, str(job_id))
+	casePath = os.path.join(current_app.config.get("OUTPUT_DATA_PATH"), str(job_id))
 	from mstarpypost.batch_post import CreateAllBatchConfig, run_post
 	conf = CreateAllBatchConfig(casePath, 
 									do_slice=True, 
